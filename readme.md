@@ -2,7 +2,7 @@ IMPLEMENTATION PLAN
 
 STAGE 1: INDEXING
 
-1. load the document , pdf / text
+1. load the document , pdf / text       //completed
 2. chunck the document
 3. make vector embeddings
 4. store the vector embedding in database - vectordatabase
