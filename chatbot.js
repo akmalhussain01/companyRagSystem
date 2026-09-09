@@ -1,7 +1,7 @@
 import readline from 'readline/promises'
 import Groq from "groq-sdk";
-import dotenv from 'dotenv';
-dotenv.config();
+import { vectorStore } from './docload.js';
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 async function chatbot() {
@@ -15,8 +15,12 @@ async function chatbot() {
         if (question.toLowerCase() === 'exit') {
             break;
         }
+        const relevantchunks = await vectorStore.similaritySearch(question, 3);
+        const context = relevantchunks.map((chunk) => chunk.pageContent).join("\n\\n");
+        console.log(context);
 
     }
+
     rl.close();
 
     // const completion = await groq.chat.completions.create({
