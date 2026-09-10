@@ -1,49 +1,31 @@
-import readline from 'readline/promises'
 import Groq from "groq-sdk";
-import { vectorStore } from './docload.js';
+import { vectorStore } from "./docload.js";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-async function chatbot() {
+async function chatbot(question) {
+    const relevantChunks = await vectorStore.similaritySearch(question, 3);
+    const context = relevantChunks.map((chunk) => chunk.pageContent).join("\n\n");
 
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const SYSTEM_PROMPT = `You are a helpful assistant for Nexora Systems.
 
-    while (true) {
+You will be given some CONTEXT retrieved from the company handbook, followed by a QUESTION.
 
-        const question = await rl.question('Ask a question (or type "exit" to quit): ');
-        // console.log(question);
+- If the CONTEXT contains information relevant to the question, answer using that context and prioritize it as the source of truth.
+- If the CONTEXT does not contain relevant information (e.g. the question is general knowledge, casual conversation, or unrelated to company policy), ignore the context and answer normally using your own knowledge.
+- Don't mention the context, retrieval, or that you're an AI system pulling from documents. Just answer naturally.`;
 
-        if (question.toLowerCase() === 'exit') {
-            break;
-        }
-        const relevantchunks = await vectorStore.similaritySearch(question, 3);
-        const context = relevantchunks.map((chunk) => chunk.pageContent).join("\n\\n");
-        // console.log(context);
+    const userPrompt = `Context:\n${context}\n\nQuestion: ${question}\nAnswer:`;
 
-        const SYSTEM_PROMPT = `You are a helpful assistant that answers questions based on the provided context. If the answer is not contained within the context, respond with "I don't know."`;
+    const completion = await groq.chat.completions.create({
+        model: "groq/compound",
+        messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
+        ],
+    });
 
-        const userPrompt = `Context:\n${context}\n\nQuestion: ${question}\nAnswer:`;
-
-        const completion = await groq.chat.completions.create({
-            model: "groq/compound",
-            messages: [
-                {
-                    role: "system",
-                    content: SYSTEM_PROMPT,
-                },
-                {
-                    role: "user",
-                    content: userPrompt,
-                },
-            ],
-        });
-        console.log(`Assistant: ${completion.choices[0].message.content}`);
-
-    }
-
-    rl.close();
-
+    return completion.choices[0].message.content;
 }
 
-chatbot();
-// export default chatbot;
+export default chatbot;
