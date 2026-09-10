@@ -27,6 +27,8 @@ const docload = async (filepath) => {
     // 1. Load the PDF
     const loader = new PDFLoader(filepath, { splitPages: false });
     const doc = await loader.load();
+    console.log("load the document",doc);
+    
 
 
     // 2. Chunk the text
